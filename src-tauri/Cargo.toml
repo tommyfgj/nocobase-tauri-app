@@ -1,6 +1,6 @@
 [package]
 name = "nocobase-desktop"
-version = "0.1.0"
+version = "0.1.1"
 description = "NocoBase desktop runtime with read-only SQL data source"
 authors = ["tommyfgj"]
 edition = "2021"

@@ -114,7 +114,7 @@ window.addEventListener("DOMContentLoaded", async () => {
       "正在检查数据库配置…",
       "正在初始化 NocoBase…",
       "正在启动本地服务…",
-      "正在注册 nb 命令环境…",
+      "正在等待 NocoBase 完成数据源加载…",
     ]);
     showMessage("首次启动会解压运行时并初始化数据库，请稍候。");
     await waitForPaint();

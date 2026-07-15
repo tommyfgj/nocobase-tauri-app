@@ -146,8 +146,23 @@ fn bundled_resource(app: &AppHandle, name: &str) -> Result<PathBuf, String> {
 fn ensure_runtime(app: &AppHandle) -> Result<PathBuf, String> {
     let runtime = runtime_dir(app)?;
     let marker = runtime.join(".desktop-runtime-ready");
-    if marker.exists() {
+    let current_version = env!("CARGO_PKG_VERSION");
+    if fs::read_to_string(&marker)
+        .map(|version| version.trim() == current_version)
+        .unwrap_or(false)
+    {
         return Ok(runtime);
+    }
+
+    let initialized = runtime.join(".nocobase-initialized").exists();
+    let nb_initialized = runtime.join(".nb-desktop-initialized").exists();
+    let storage = runtime.join("storage");
+    let storage_backup = runtime
+        .parent()
+        .ok_or_else(|| "运行时目录没有父目录".to_string())?
+        .join(format!(".storage-upgrade-{}", Uuid::new_v4()));
+    if storage.exists() {
+        fs::rename(&storage, &storage_backup).map_err(|error| error.to_string())?;
     }
     if runtime.exists() {
         fs::remove_dir_all(&runtime).map_err(|error| error.to_string())?;
@@ -158,7 +173,22 @@ fn ensure_runtime(app: &AppHandle) -> Result<PathBuf, String> {
     tar::Archive::new(GzDecoder::new(archive))
         .unpack(&runtime)
         .map_err(|error| error.to_string())?;
-    fs::write(marker, env!("CARGO_PKG_VERSION")).map_err(|error| error.to_string())?;
+    if storage_backup.exists() {
+        let extracted_storage = runtime.join("storage");
+        if extracted_storage.exists() {
+            fs::remove_dir_all(&extracted_storage).map_err(|error| error.to_string())?;
+        }
+        fs::rename(&storage_backup, &extracted_storage).map_err(|error| error.to_string())?;
+    }
+    if initialized {
+        fs::write(runtime.join(".nocobase-initialized"), "ok")
+            .map_err(|error| error.to_string())?;
+    }
+    if nb_initialized {
+        fs::write(runtime.join(".nb-desktop-initialized"), "ok")
+            .map_err(|error| error.to_string())?;
+    }
+    fs::write(marker, current_version).map_err(|error| error.to_string())?;
     Ok(runtime)
 }
 
@@ -188,6 +218,22 @@ fn command_env(command: &mut Command, runtime: &Path, config: &DatabaseConfig) {
     }
 }
 
+#[cfg(unix)]
+fn login_shell_path() -> Option<String> {
+    const MARKER: &str = "__NOCOBASE_DESKTOP_PATH__";
+    let output = Command::new("/bin/zsh")
+        .args(["-lc", "printf '__NOCOBASE_DESKTOP_PATH__%s' \"$PATH\""])
+        .output()
+        .ok()?;
+    if !output.status.success() {
+        return None;
+    }
+    let stdout = String::from_utf8(output.stdout).ok()?;
+    let marker_index = stdout.rfind(MARKER)?;
+    let path = stdout[marker_index + MARKER.len()..].trim();
+    (!path.is_empty()).then(|| path.to_string())
+}
+
 fn node_command(
     app: &AppHandle,
     runtime: &Path,
@@ -195,6 +241,10 @@ fn node_command(
 ) -> Result<Command, String> {
     let mut command = Command::new(bundled_resource(app, "node")?);
     command.current_dir(runtime);
+    #[cfg(unix)]
+    if let Some(path) = login_shell_path() {
+        command.env("PATH", path);
+    }
     #[cfg(unix)]
     {
         use std::os::unix::process::CommandExt;
@@ -273,7 +323,7 @@ fn run_setup_command(
 
 fn wait_for_api() -> Result<(), String> {
     let address = SocketAddr::from(([127, 0, 0, 1], APP_PORT));
-    for _ in 0..90 {
+    for _ in 0..300 {
         if let Ok(mut stream) = TcpStream::connect_timeout(&address, Duration::from_millis(300)) {
             let _ = stream.set_read_timeout(Some(Duration::from_secs(1)));
             let _ = stream.write_all(
@@ -283,13 +333,15 @@ fn wait_for_api() -> Result<(), String> {
             if stream.read_to_string(&mut response).is_ok()
                 && response.starts_with("HTTP/1.1 200")
                 && response.contains("application/json")
+                && !response.contains("APP_COMMANDING")
+                && !response.contains("\"maintaining\":true")
             {
                 return Ok(());
             }
         }
         std::thread::sleep(Duration::from_secs(1));
     }
-    Err("NocoBase API 启动超时".into())
+    Err("NocoBase 在 5 分钟内未完成数据源加载，请查看运行日志".into())
 }
 
 fn install_nb_launcher(app: &AppHandle, runtime: &Path) -> Result<PathBuf, String> {
