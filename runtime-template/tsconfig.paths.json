@@ -1,0 +1,24 @@
+{
+  "compilerOptions": {
+    "paths": {
+      "@docs/*": [
+        "docs/docs/*"
+      ],
+      "@@/*": [
+        ".dumi/tmp/*"
+      ],
+      "@tommyfgj/plugin-data-source-readonly-mysql/client": [
+        "packages/plugins/@tommyfgj/plugin-data-source-readonly-mysql/src/client"
+      ],
+      "@tommyfgj/plugin-data-source-readonly-mysql/client-v2": [
+        "packages/plugins/@tommyfgj/plugin-data-source-readonly-mysql/src/client-v2"
+      ],
+      "@tommyfgj/plugin-data-source-readonly-mysql/package.json": [
+        "packages/plugins/@tommyfgj/plugin-data-source-readonly-mysql/package.json"
+      ],
+      "@tommyfgj/plugin-data-source-readonly-mysql": [
+        "packages/plugins/@tommyfgj/plugin-data-source-readonly-mysql/src"
+      ]
+    }
+  }
+}

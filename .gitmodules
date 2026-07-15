@@ -1,0 +1,6 @@
+[submodule "vendor/nocobase"]
+	path = vendor/nocobase
+	url = https://github.com/nocobase/nocobase.git
+[submodule "vendor/plugin-data-source-readonly-mysql"]
+	path = vendor/plugin-data-source-readonly-mysql
+	url = https://github.com/tommyfgj/plugin-data-source-readonly-mysql.git

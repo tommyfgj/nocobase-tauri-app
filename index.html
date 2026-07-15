@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="stylesheet" href="/src/styles.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>NocoBase Desktop</title>
+    <script type="module" src="/src/main.ts" defer></script>
+  </head>
+
+  <body>
+    <main class="shell">
+      <header>
+        <div>
+          <span class="eyebrow">NOCOBASE DESKTOP</span>
+          <h1>数据库与运行服务</h1>
+          <p>固定地址 <code>http://127.0.0.1:14300</code></p>
+        </div>
+        <span id="status-pill" class="pill">未启动</span>
+      </header>
+      <form id="database-form" class="card">
+        <h2>主数据库配置</h2>
+        <div class="grid">
+          <label>数据库类型<select id="dialect"><option value="postgres">PostgreSQL</option><option value="mysql">MySQL</option><option value="mariadb">MariaDB</option></select></label>
+          <label>端口<input id="port" type="number" required /></label>
+          <label class="wide">主机<input id="host" required /></label>
+          <label class="wide">数据库<input id="database" required /></label>
+          <label>用户名<input id="user" required /></label>
+          <label>密码<input id="password" type="password" autocomplete="current-password" /></label>
+        </div>
+        <div class="actions">
+          <button id="start" type="submit">保存并启动</button>
+          <button id="stop" type="button" class="secondary">停止</button>
+          <button id="open" type="button" class="secondary">打开 NocoBase</button>
+        </div>
+        <div id="startup-progress" class="startup-progress" hidden>
+          <div class="progress-heading">
+            <span class="spinner"></span>
+            <span id="progress-label">正在准备运行环境…</span>
+          </div>
+          <div class="progress-track"><span></span></div>
+          <p>首次启动通常需要较长时间，请勿关闭窗口。</p>
+        </div>
+      </form>
+      <section class="card compact">
+        <div><h2>Agent 命令行</h2><p>安装项目内置的 <code>nb</code>，不会使用全局 npm 包。</p></div>
+        <button id="install-cli" type="button" class="secondary">安装 nb</button>
+      </section>
+      <div id="message" role="status"></div>
+      <footer>内置 NocoBase 2.1.24 · Read-only MySQL / Doris plugin</footer>
+    </main>
+  </body>
+</html>
