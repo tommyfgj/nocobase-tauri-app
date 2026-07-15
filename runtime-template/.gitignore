@@ -5,6 +5,7 @@ es/
 .env
 .env.test
 .env.e2e
+.env.e2e.example
 .DS_Store
 yarn-error.log
 lerna-debug.log
